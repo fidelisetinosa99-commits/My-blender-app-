@@ -1,0 +1,73 @@
+# MY-BLENDER APP - Football League Edition
+# Built in Agbor, Delta State - by fidelisetinosa99
+import pygame, math
+pygame.init()
+screen = pygame.display.set_mode((900,600))
+pygame.display.set_caption("MY BLENDER - League Builder")
+clock = pygame.time.Clock()
+
+objects=[] 
+angle_x, angle_y = 0.6, 0.6
+
+class PlayerPart:
+    def __init__(self, x,y,z, w,h,d, color):
+        self.x,self.y,self.z=x,y,z
+        self.w,self.h,self.d=w,h,d
+        self.color=color
+
+def rot(p, ax, ay):
+    x,y,z = p
+    y2 = y*math.cos(ax)-z*math.sin(ax)
+    z2 = y*math.sin(ax)+z*math.cos(ax)
+    x3 = x*math.cos(ay)-z2*math.sin(ay)
+    z3 = x*math.sin(ay)+z2*math.cos(ay)
+    return (x3, y2, z3)
+
+def project(p):
+    x,y,z = p
+    f = 400/(400+z)
+    return (int(x*f+450), int(y*f+300))
+
+def draw_box(obj):
+    x,y,z,w,h,d = obj.x,obj.y,obj.z,obj.w,obj.h,obj.d
+    corners=[(x,y,z),(x+w,y,z),(x+w,y+h,z),(x,y+h,z),
+             (x,y,z+d),(x+w,y,z+d),(x+w,y+h,z+d),(x,y+h,z+d)]
+    rc=[rot(c, angle_x, angle_y) for c in corners]
+    pc=[project(c) for c in rc]
+    edges=[(0,1),(1,2),(2,3),(3,0),(4,5),(5,6),(6,7),(7,4),(0,4),(1,5),(2,6),(3,7)]
+    for a,b in edges:
+        pygame.draw.line(screen, obj.color, pc[a], pc[b], 3)
+
+# Pre-made Footballer
+def add_footballer():
+    objects.append(PlayerPart(-20,-80,0, 40,40,30, (255,220,180))) # head
+    objects.append(PlayerPart(-35,-40,0, 70,60,30, (0,255,0))) # jersey
+    objects.append(PlayerPart(-30,20,0, 25,50,20, (0,100,0))) # leg L
+    objects.append(PlayerPart(5,20,0, 25,50,20, (0,100,0))) # leg R
+
+running=True
+while running:
+    for e in pygame.event.get():
+        if e.type==pygame.QUIT: running=False
+        if e.type==pygame.KEYDOWN:
+            if e.key==pygame.K_n: objects.append(PlayerPart(0,0,0, 40,40,40, (0,255,0)))
+            if e.key==pygame.K_f: add_footballer() # F = Footballer
+        if e.type==pygame.MOUSEMOTION and pygame.mouse.get_pressed()[0]:
+            angle_y+=e.rel[0]*0.01
+            angle_x+=e.rel[1]*0.01
+
+    screen.fill((25,25,25))
+    pygame.draw.rect(screen, (45,45,45), (0,0,160,600))
+    font=pygame.font.Font(None,20)
+    screen.blit(font.render("MY BLENDER", True, (255,255,255)), (20,20))
+    screen.blit(font.render("F = Add Footballer", True, (0,255,100)), (10,60))
+    screen.blit(font.render("N = Add Cube", True, (200,200,200)), (10,85))
+    screen.blit(font.render("Drag = Rotate", True, (200,200,200)), (10,110))
+    screen.blit(font.render(f"Parts: {len(objects)}", True, (0,255,0)), (10,150))
+
+    for o in objects: draw_box(o)
+    if not objects:
+        screen.blit(pygame.font.Font(None,30).render("Press F to build League Player", True, (255,255,255)), (220,270))
+
+    pygame.display.flip()
+    clock.tick(60)
