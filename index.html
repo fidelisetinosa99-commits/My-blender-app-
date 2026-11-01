@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TIMBER 3D STUDIO</title>
+<style>
+body{margin:0;background:#20232b;color:white;font-family:Arial}
+header{padding:15px;background:#111;font-size:20px;font-weight:bold}
+#tools{padding:10px;display:flex;flex-wrap:wrap;gap:7px;background:#292d38}
+button,select,input{padding:10px;border:0;border-radius:5px;background:#414958;color:white}
+#scene{width:100%;height:65vh;display:block}
+#info{padding:10px}
+</style>
+</head>
+<body>
+<header>⚡ TIMBER 3D STUDIO</header>
+<div id="tools">
+<button onclick="add('box')">+ Cube</button>
+<button onclick="add('sphere')">+ Sphere</button>
+<button onclick="add('cylinder')">+ Cylinder</button>
+<button onclick="rotate()">Rotate</button>
+<button onclick="remove()">Delete</button>
+<select id="color" onchange="changeColor(this.value)">
+<option value="#ff3333">Red</option>
+<option value="#2288ff">Blue</option>
+<option value="#22dd77">Green</option>
+<option value="#ffcc22">Gold</option>
+<option value="#ffffff">White</option>
+</select>
+<button onclick="scale(1.2)">Size +</button>
+<button onclick="scale(0.8)">Size -</button>
+</div>
+<canvas id="scene"></canvas>
+<div id="info">Drag to rotate camera • Pinch or scroll to zoom</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+const canvas=document.getElementById("scene");
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x252a35);
+
+const camera=new THREE.PerspectiveCamera(60,1,0.1,1000);
+camera.position.set(4,3,6);
+camera.lookAt(0,0,0);
+
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x444455,2));
+
+const light=new THREE.DirectionalLight(0xffffff,3);
+light.position.set(5,8,5);
+scene.add(light);
+
+const grid=new THREE.GridHelper(20,20);
+scene.add(grid);
+
+const objects=[];
+let selected=null;
+
+function resize(){
+let w=canvas.clientWidth,h=canvas.clientHeight;
+renderer.setSize(w,h,false);
+camera.aspect=w/h;
+camera.updateProjectionMatrix();
+}
+window.addEventListener("resize",resize);
+resize();
+
+function add(type){
+let geo;
+if(type==="box")geo=new THREE.BoxGeometry(1,1,1);
+if(type==="sphere")geo=new THREE.SphereGeometry(0.7,32,32);
+if(type==="cylinder")geo=new THREE.CylinderGeometry(.6,.6,1,32);
+
+let mat=new THREE.MeshStandardMaterial({color:0x2288ff,roughness:.5});
+let obj=new THREE.Mesh(geo,mat);
+obj.position.y=0.5;
+scene.add(obj);
+objects.push(obj);
+select(obj);
+}
+
+function select(obj){
+if(selected)selected.material.emissive.setHex(0x000000);
+selected=obj;
+if(selected)selected.material.emissive.setHex(0x222222);
+}
+
+function changeColor(c){
+if(selected)selected.material.color.set(c);
+}
+
+function rotate(){
+if(selected)selected.rotation.y+=Math.PI/4;
+}
+
+function scale(n){
+if(selected)selected.scale.multiplyScalar(n);
+}
+
+function remove(){
+if(selected){
+scene.remove(selected);
+objects.splice(objects.indexOf(selected),1);
+selected=null;
+}
+}
+
+add("box");
+
+let dragging=false,lastX=0,lastY=0;
+let angle=0,vertical=0,zoom=7;
+
+canvas.addEventListener("pointerdown",e=>{
+dragging=true;
+lastX=e.clientX;
+lastY=e.clientY;
+canvas.setPointerCapture(e.pointerId);
+});
+
+canvas.addEventListener("pointermove",e=>{
+if(!dragging)return;
+angle+=(e.clientX-lastX)*.01;
+vertical=Math.max(-1.2,Math.min(1.2,vertical+(e.clientY-lastY)*.01));
+lastX=e.clientX;
+lastY=e.clientY;
+});
+
+canvas.addEventListener("pointerup",()=>dragging=false);
+canvas.addEventListener("pointercancel",()=>dragging=false);
+
+canvas.addEventListener("wheel",e=>{
+zoom=Math.max(2,Math.min(20,zoom+e.deltaY*.01));
+});
+
+function animate(){
+requestAnimationFrame(animate);
+camera.position.set(
+Math.sin(angle)*zoom,
+3+vertical*zoom,
+Math.cos(angle)*zoom
+);
+camera.lookAt(0,0,0);
+renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+  </html>
+  
